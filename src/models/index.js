@@ -30,6 +30,7 @@ const Perfume = sequelize.define('Perfume', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   brand: { type: DataTypes.STRING(100), allowNull: false },
   name: { type: DataTypes.STRING(200), allowNull: false },
+  url: { type: DataTypes.STRING(500), allowNull: true },
   notes: { type: DataTypes.JSON, allowNull: false },
   season_tags: { type: DataTypes.JSON, allowNull: false },
   weather_tags: { type: DataTypes.JSON, allowNull: false },

@@ -72,19 +72,31 @@ function App() {
     setModalVisible(true);
   };
 
-  // 삭제 기능 비활성화 (테스트 데이터 보호)
-  const handleDelete = async (id) => {
-    message.warning('테스트 데이터는 삭제할 수 없습니다.');
+  const handleToggleStatus = async (record) => {
+    const nextStatus = record.status === 1 ? 0 : 1;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/perfumes/${record.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...record,
+          status: nextStatus
+        })
+      });
+      if (!response.ok) throw new Error('상태 변경에 실패했습니다.');
+      message.success(nextStatus === 1 ? '향수가 노출되었습니다.' : '향수가 감춰졌습니다.');
+      fetchPerfumes();
+    } catch (err) {
+      message.error(err.message);
+    }
   };
 
   const handleSubmit = async (values) => {
     try {
-      const url = editingPerfume 
+      const url = editingPerfume
         ? `${API_BASE_URL}/api/perfumes/${editingPerfume.id}`
         : `${API_BASE_URL}/api/perfumes`;
-      
       const method = editingPerfume ? 'PUT' : 'POST';
-      
       const response = await fetch(url, {
         method,
         headers: {
@@ -92,11 +104,9 @@ function App() {
         },
         body: JSON.stringify(values),
       });
-
       if (!response.ok) {
         throw new Error('저장에 실패했습니다.');
       }
-
       message.success(editingPerfume ? '향수가 수정되었습니다.' : '향수가 추가되었습니다.');
       setModalVisible(false);
       fetchPerfumes();
@@ -146,23 +156,22 @@ function App() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
             size="small"
-            disabled
-            title="수정 비활성화됨"
+            onClick={() => handleEdit(record)}
           >
             수정
           </Button>
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
+          <Button
+            type={record.status === 1 ? 'default' : 'primary'}
+            danger={record.status === 1}
+            icon={<DeleteOutlined />}
             size="small"
-            disabled
-            title="삭제 비활성화됨"
+            onClick={() => handleToggleStatus(record)}
           >
-            삭제
+            {record.status === 1 ? '감추기' : '노출하기'}
           </Button>
         </Space>
       ),
@@ -258,6 +267,14 @@ function App() {
             rules={[{ required: true, message: '향수 이름을 입력해주세요!' }]}
           >
             <Input />
+          </Form.Item>
+          
+          <Form.Item
+            name="url"
+            label="상세 정보 URL"
+            rules={[]}
+          >
+            <Input placeholder="https://www.fragrantica.fr/..." />
           </Form.Item>
           
           <Form.Item

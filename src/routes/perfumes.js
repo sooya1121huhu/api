@@ -6,7 +6,6 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const perfumes = await Perfume.findAll({
-      where: { status: 1 },
       order: [['createdAt', 'DESC']]
     });
     
@@ -53,7 +52,7 @@ router.get('/:id', async (req, res) => {
 // 향수 등록
 router.post('/', async (req, res) => {
   try {
-    const { brand, name, notes, season_tags, weather_tags, analysis_reason } = req.body;
+    const { brand, name, notes, season_tags, weather_tags, analysis_reason, url } = req.body;
     
     // 필수 필드 검증
     if (!brand || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
@@ -79,6 +78,7 @@ router.post('/', async (req, res) => {
     const perfume = await Perfume.create({
       brand,
       name,
+      url,
       notes,
       season_tags,
       weather_tags,
@@ -105,7 +105,7 @@ router.post('/', async (req, res) => {
 // 향수 수정
 router.put('/:id', async (req, res) => {
   try {
-    const { brand, name, notes, season_tags, weather_tags, analysis_reason } = req.body;
+    const { brand, name, notes, season_tags, weather_tags, analysis_reason, url, status } = req.body;
     
     // 필수 필드 검증
     if (!brand || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
@@ -145,10 +145,12 @@ router.put('/:id', async (req, res) => {
     await perfume.update({
       brand,
       name,
+      url,
       notes,
       season_tags,
       weather_tags,
-      analysis_reason
+      analysis_reason,
+      status: typeof status !== 'undefined' ? status : perfume.status
     });
     
     res.json({
