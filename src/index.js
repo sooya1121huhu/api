@@ -4,12 +4,15 @@ const helmet = require('helmet');
 require('dotenv').config();
 
 // 데이터베이스 및 모델 import
-const { sequelize, testConnection } = require('./config/database');
-const User = require('./models/User');
+const { sequelize, syncDatabase } = require('./config/database');
+const { User, Perfume, UserPerfume } = require('./models');
 const usersRouter = require('./routes/users');
+const perfumesRouter = require('./routes/perfumes');
+const recommendationsRouter = require('./routes/recommendations');
+const userPerfumesRouter = require('./routes/userPerfumes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // 미들웨어
 app.use(helmet());
@@ -17,27 +20,30 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 데이터베이스 연결 테스트
-testConnection();
+// 데이터베이스 연결 및 테이블 동기화
+syncDatabase();
 
-// 데이터베이스 동기화 (개발 환경에서만 사용)
-sequelize.sync({ force: false }).then(() => {
-  console.log('✅ 데이터베이스 테이블이 동기화되었습니다.');
-}).catch((error) => {
-  console.error('❌ 데이터베이스 동기화 실패:', error);
-});
+// 모델 관계 설정
+// User.hasMany(UserPerfume, { foreignKey: 'user_id' });
+// UserPerfume.belongsTo(User, { foreignKey: 'user_id' });
+// Perfume.hasMany(UserPerfume, { foreignKey: 'perfume_id' });
+// UserPerfume.belongsTo(Perfume, { foreignKey: 'perfume_id' });
 
 // 라우터 설정
 app.use('/api/users', usersRouter);
+app.use('/api/perfumes', perfumesRouter);
+app.use('/api/recommendations', recommendationsRouter);
+app.use('/api/user-perfumes', userPerfumesRouter);
 
 // 기본 라우트
 app.get('/', (req, res) => {
   res.json({
-    message: 'API 서버가 정상적으로 실행 중입니다!',
+    message: '향수 추천 API 서버가 정상적으로 실행 중입니다!',
     timestamp: new Date().toISOString(),
     database: 'MySQL 연결됨',
     endpoints: {
       users: '/api/users',
+      perfumes: '/api/perfumes',
       health: '/api/health'
     }
   });
@@ -53,7 +59,10 @@ app.get('/api/health', async (req, res) => {
       status: 'OK',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
-      database: 'Connected'
+      database: 'Connected',
+      services: {
+        mysql: 'Connected'
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -85,4 +94,5 @@ app.listen(PORT, () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   console.log(`http://localhost:${PORT}`);
   console.log('📊 MySQL 데이터베이스 연동 완료!');
+  console.log('🤖 향수 추천 시스템 준비 완료!');
 }); 
