@@ -31,7 +31,8 @@ const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 const { Option } = Select;
 
-const API_BASE_URL = 'http://localhost:8080';
+// 환경변수에서 API 주소를 읽어오고, 없으면 기본값 사용
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 function App() {
   const [perfumes, setPerfumes] = useState([]);

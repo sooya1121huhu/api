@@ -42,7 +42,8 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import './App.css';
 
-const API_BASE_URL = 'http://localhost:8080';
+// 환경변수에서 API 주소를 읽어오고, 없으면 기본값 사용
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 function App() {
   // 인증 상태
