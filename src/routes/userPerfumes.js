@@ -26,10 +26,11 @@ router.get('/', auth, async (req, res) => {
     const userPerfumes = await UserPerfume.findAll({
       where: { user_id: req.user.userId },
       include: [{ model: Perfume }],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
     res.json({ success: true, data: userPerfumes });
   } catch (err) {
+    console.error(err); // 에러 로그 추가
     res.status(500).json({ success: false, message: '조회 오류', error: err.message });
   }
 });
