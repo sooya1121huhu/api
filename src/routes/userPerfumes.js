@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { UserPerfume, Perfume, User } = require('../models');
 const router = express.Router();
+const sequelize = require('sequelize'); // sequelize 모듈 추가
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
@@ -59,6 +60,32 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ success: true, message: '삭제 완료' });
   } catch (err) {
     res.status(500).json({ success: false, message: '삭제 오류', error: err.message });
+  }
+});
+
+// 향수별 보유 유저 수 집계 (관리자용)
+router.get('/summary', async (req, res) => {
+  try {
+    const { Perfume, UserPerfume } = require('../models');
+    // 향수별 보유 유저 수 집계
+    const results = await UserPerfume.findAll({
+      attributes: [
+        'perfume_id',
+        [sequelize.fn('COUNT', sequelize.col('user_id')), 'user_count']
+      ],
+      group: ['perfume_id'],
+      include: [{ model: Perfume, attributes: ['name'] }],
+      raw: true
+    });
+    // 결과를 향수명/유저수 형태로 가공
+    const summary = results.map(r => ({
+      perfume_id: r.perfume_id,
+      perfume_name: r['Perfume.name'],
+      user_count: r.user_count
+    }));
+    res.json({ success: true, data: summary });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '집계 오류', error: err.message });
   }
 });
 

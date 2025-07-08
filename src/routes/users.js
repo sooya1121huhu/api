@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
   try {
     const users = await User.findAll({
       where: { status: 1 },
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
     
     res.json({

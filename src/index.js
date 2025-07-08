@@ -92,8 +92,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
-  console.log(`http://localhost:${PORT}`);
-  console.log(`http://0.0.0.0:${PORT} (네트워크 접근 가능)`);
+  // console.log(`http://localhost:${PORT}`);
+  // console.log(`http://0.0.0.0:${PORT} (네트워크 접근 가능)`);
   console.log('📊 MySQL 데이터베이스 연동 완료!');
   console.log('🤖 향수 추천 시스템 준비 완료!');
 }); 

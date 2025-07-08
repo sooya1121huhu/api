@@ -38,8 +38,6 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-const API_BASE_URL = 'http://localhost:3000/api';
-
 function App() {
   const [perfumes, setPerfumes] = useState([]);
   const [users, setUsers] = useState([]);

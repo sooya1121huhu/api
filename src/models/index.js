@@ -22,7 +22,9 @@ const User = sequelize.define('User', {
   password: { type: DataTypes.STRING(255), allowNull: false }
 }, {
   tableName: 'users',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 // Perfume 모델
@@ -38,7 +40,9 @@ const Perfume = sequelize.define('Perfume', {
   status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
 }, {
   tableName: 'perfumes',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 // UserPerfume 모델
@@ -48,7 +52,9 @@ const UserPerfume = sequelize.define('UserPerfume', {
   perfume_id: { type: DataTypes.INTEGER, allowNull: false }
 }, {
   tableName: 'user_perfumes',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 // 관계 설정
