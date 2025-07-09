@@ -81,7 +81,7 @@ function AdminLayout() {
 
   useEffect(() => {
     if (currentTab === 'perfumes') {
-      fetchPerfumes();
+    fetchPerfumes();
     } else if (currentTab === 'dashboard') {
       fetchPerfumeSummary();
     } else if (currentTab === 'users') {
@@ -379,42 +379,42 @@ function PerfumeTab({ perfumes, loading, modalVisible, setModalVisible, editingP
   ];
   return (
     <>
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="총 향수 수"
-              value={perfumes.length}
-              prefix={<ShoppingOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="총 브랜드 수"
-              value={perfumes.length > 0 ? new Set(perfumes.map(p => p.brand)).size : 0}
-              suffix="개"
-            />
-          </Card>
-        </Col>
-      </Row>
-      <div style={{ marginBottom: 16 }}>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
-          onClick={handleAdd}
-        >
-          향수 추가
-        </Button>
-      </div>
-      <Table
-        columns={columns}
-        dataSource={perfumes}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="총 향수 수"
+                  value={perfumes.length}
+                  prefix={<ShoppingOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="총 브랜드 수"
+                  value={perfumes.length > 0 ? new Set(perfumes.map(p => p.brand)).size : 0}
+                  suffix="개"
+                />
+              </Card>
+            </Col>
+          </Row>
+          <div style={{ marginBottom: 16 }}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={handleAdd}
+            >
+              향수 추가
+            </Button>
+          </div>
+          <Table
+            columns={columns}
+            dataSource={perfumes}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 10 }}
+          />
       <Modal
         title={editingPerfume ? '향수 수정' : '향수 추가'}
         open={modalVisible}

@@ -149,7 +149,11 @@ router.put('/:id', async (req, res) => {
     // 업데이트할 필드만 수정
     if (username) user.username = username;
     if (email) user.email = email;
-    if (password) user.password = password; // 실제로는 해시화해야 함
+    if (password) {
+      // 비밀번호는 bcrypt로 해시화
+      const hash = await bcrypt.hash(password, 10);
+      user.password = hash;
+    }
     
     await user.save();
     
@@ -367,6 +371,101 @@ router.post('/login', async (req, res) => {
     res.json({ success: true, message: '로그인 성공', token });
   } catch (err) {
     res.status(500).json({ success: false, message: '로그인 오류', error: err.message });
+  }
+});
+
+// 비밀번호 변경
+router.put('/:id/password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.params.id;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '현재 비밀번호와 새 비밀번호를 모두 입력해주세요.'
+      });
+    }
+    
+    const user = await User.findByPk(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '사용자를 찾을 수 없습니다.'
+      });
+    }
+    
+    // 현재 비밀번호 확인
+    const validCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validCurrentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '현재 비밀번호가 일치하지 않습니다.'
+      });
+    }
+    
+    // 새 비밀번호 해시화
+    const hash = await bcrypt.hash(newPassword, 10);
+    
+    // 비밀번호 업데이트
+    await user.update({ password: hash });
+    
+    res.json({
+      success: true,
+      message: '비밀번호가 성공적으로 변경되었습니다.'
+    });
+    
+  } catch (error) {
+    console.error('비밀번호 변경 오류:', error);
+    res.status(500).json({
+      success: false,
+      message: '비밀번호 변경 중 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 관리자용 비밀번호 리셋 (현재 비밀번호 확인 없이)
+router.put('/:id/reset-password', async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const userId = req.params.id;
+    
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '새 비밀번호를 입력해주세요.'
+      });
+    }
+    
+    const user = await User.findByPk(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '사용자를 찾을 수 없습니다.'
+      });
+    }
+    
+    // 새 비밀번호 해시화
+    const hash = await bcrypt.hash(newPassword, 10);
+    
+    // 비밀번호 업데이트
+    await user.update({ password: hash });
+    
+    res.json({
+      success: true,
+      message: '비밀번호가 성공적으로 리셋되었습니다.'
+    });
+    
+  } catch (error) {
+    console.error('비밀번호 리셋 오류:', error);
+    res.status(500).json({
+      success: false,
+      message: '비밀번호 리셋 중 오류가 발생했습니다.',
+      error: error.message
+    });
   }
 });
 
