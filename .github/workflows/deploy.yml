@@ -1,37 +1,32 @@
-name: Deploy API to EC2
+name: Deploy to EC2
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Add EC2 to known_hosts
+        run: |
+          ssh-keyscan -H 13.209.98.222 >> ~/.ssh/known_hosts
 
-    - name: Run tests
-      run: echo "테스트 생략"
-
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: ${{ secrets.EC2_PORT }}
-        script: |
-          cd /home/ubuntu/perfume_ys/api
-          git pull origin main
-          npm ci --only=production
-          pm2 restart api || pm2 start src/index.js --name api 
+      - name: Deploy to EC2 and restart server
+        run: |
+          ssh ubuntu@13.209.98.222 '
+            cd /home/ubuntu/api &&
+            git pull &&
+            npm install &&
+            npm run dev &
+          '
