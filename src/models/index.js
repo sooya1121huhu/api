@@ -1,9 +1,8 @@
-require('dotenv').config({ path: './config.env' });
+require('dotenv').config();
 const { Sequelize, DataTypes } = require('sequelize');
-const config = require('../config/database');
 
-// Sequelize 인스턴스 생성 (config에서 불러오거나 직접 생성)
-const sequelize = config.sequelize || new Sequelize(
+// 환경변수 확인 및 Sequelize 인스턴스 생성
+const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
   process.env.DB_PASSWORD,
