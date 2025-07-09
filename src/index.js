@@ -22,7 +22,10 @@ const corsOptions = {
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
     'http://0.0.0.0:5173',
-    'http://0.0.0.0:5174'
+    'http://0.0.0.0:5174',
+    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com', // S3 정적 웹 호스팅
+    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com/frontend', // 프론트엔드
+    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com/admin' // 어드민
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
