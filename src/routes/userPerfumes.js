@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { UserPerfume, Perfume, User } = require('../models');
 const router = express.Router();
-const sequelize = require('sequelize'); // sequelize 모듈 추가
+const { Sequelize } = require('sequelize'); // sequelize 모듈 수정
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
@@ -72,7 +72,7 @@ router.get('/summary', async (req, res) => {
     const results = await UserPerfume.findAll({
       attributes: [
         'perfume_id',
-        [sequelize.fn('COUNT', sequelize.col('user_id')), 'user_count']
+        [Sequelize.fn('COUNT', Sequelize.col('user_id')), 'user_count']
       ],
       group: ['perfume_id'],
       include: [{ model: Perfume, attributes: ['name'] }],

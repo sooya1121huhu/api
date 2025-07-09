@@ -19,7 +19,8 @@ const sequelize = config.sequelize || new Sequelize(
 const User = sequelize.define('User', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-  password: { type: DataTypes.STRING(255), allowNull: false }
+  password: { type: DataTypes.STRING(255), allowNull: false },
+  status: { type: DataTypes.TINYINT, allowNull: false, defaultValue: 1, comment: '0: 삭제, 1: 활성' }
 }, {
   tableName: 'users',
   timestamps: true,

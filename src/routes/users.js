@@ -11,7 +11,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 router.get('/', async (req, res) => {
   try {
     const users = await User.findAll({
-      where: { status: 1 },
       order: [['created_at', 'DESC']]
     });
     
