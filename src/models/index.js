@@ -49,7 +49,8 @@ const Perfume = sequelize.define('Perfume', {
 const UserPerfume = sequelize.define('UserPerfume', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   user_id: { type: DataTypes.INTEGER, allowNull: false },
-  perfume_id: { type: DataTypes.INTEGER, allowNull: false }
+  perfume_id: { type: DataTypes.INTEGER, allowNull: false },
+  status: { type: DataTypes.TINYINT, allowNull: false, defaultValue: 1, comment: '0: 삭제, 1: 사용 중, 2: 사용 완료' }
 }, {
   tableName: 'user_perfumes',
   timestamps: true,
