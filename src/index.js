@@ -8,6 +8,7 @@ const { sequelize, syncDatabase } = require('./config/database');
 const { User, Perfume, UserPerfume } = require('./models');
 const usersRouter = require('./routes/users');
 const perfumesRouter = require('./routes/perfumes');
+const brandsRouter = require('./routes/brands');
 const recommendationsRouter = require('./routes/recommendations');
 const userPerfumesRouter = require('./routes/userPerfumes');
 
@@ -28,7 +29,7 @@ const corsOptions = {
     'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com/admin' // 어드민
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
@@ -50,6 +51,7 @@ syncDatabase();
 // 라우터 설정
 app.use('/api/users', usersRouter);
 app.use('/api/perfumes', perfumesRouter);
+app.use('/api/brands', brandsRouter);
 app.use('/api/recommendations', recommendationsRouter);
 app.use('/api/user-perfumes', userPerfumesRouter);
 
@@ -62,6 +64,7 @@ app.get('/', (req, res) => {
     endpoints: {
       users: '/api/users',
       perfumes: '/api/perfumes',
+      brands: '/api/brands',
       health: '/api/health'
     }
   });

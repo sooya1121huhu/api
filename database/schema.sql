@@ -26,13 +26,25 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 2. 향수 테이블 (perfumes)
+-- 2. 브랜드 테이블 (perfumes_brand)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS perfumes_brand (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    status TINYINT NOT NULL DEFAULT 0 COMMENT '0: 삭제, 1: 사용중',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- 3. 향수 테이블 (perfumes)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS perfumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    brand VARCHAR(100) NOT NULL,
+    brand_id INT NOT NULL,
     name VARCHAR(200) NOT NULL,
-    url VARCHAR(500) NULL,
     notes JSON NOT NULL,
     season_tags JSON NOT NULL,
     weather_tags JSON NOT NULL,
@@ -40,13 +52,14 @@ CREATE TABLE IF NOT EXISTS perfumes (
     status INT NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_brand (brand),
+    FOREIGN KEY (brand_id) REFERENCES perfumes_brand(id) ON DELETE RESTRICT,
+    INDEX idx_brand_id (brand_id),
     INDEX idx_name (name),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 3. 사용자-향수 관계 테이블 (user_perfumes)
+-- 4. 사용자-향수 관계 테이블 (user_perfumes)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS user_perfumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,5 +83,6 @@ SHOW TABLES;
 
 -- 테이블 구조 확인
 DESCRIBE users;
+DESCRIBE perfumes_brand;
 DESCRIBE perfumes;
 DESCRIBE user_perfumes; 

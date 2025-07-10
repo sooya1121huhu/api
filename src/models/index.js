@@ -27,12 +27,23 @@ const User = sequelize.define('User', {
   updatedAt: 'updated_at'
 });
 
+// PerfumeBrand 모델
+const PerfumeBrand = sequelize.define('PerfumeBrand', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  status: { type: DataTypes.TINYINT, allowNull: false, defaultValue: 0, comment: '0: 삭제, 1: 사용중' }
+}, {
+  tableName: 'perfumes_brand',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
+});
+
 // Perfume 모델
 const Perfume = sequelize.define('Perfume', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  brand: { type: DataTypes.STRING(100), allowNull: false },
+  brand_id: { type: DataTypes.INTEGER, allowNull: false },
   name: { type: DataTypes.STRING(200), allowNull: false },
-  url: { type: DataTypes.STRING(500), allowNull: true },
   notes: { type: DataTypes.JSON, allowNull: false },
   season_tags: { type: DataTypes.JSON, allowNull: false },
   weather_tags: { type: DataTypes.JSON, allowNull: false },
@@ -61,7 +72,11 @@ const UserPerfume = sequelize.define('UserPerfume', {
 // 관계 설정
 User.hasMany(UserPerfume, { foreignKey: 'user_id' });
 UserPerfume.belongsTo(User, { foreignKey: 'user_id' });
+
+PerfumeBrand.hasMany(Perfume, { foreignKey: 'brand_id' });
+Perfume.belongsTo(PerfumeBrand, { foreignKey: 'brand_id' });
+
 Perfume.hasMany(UserPerfume, { foreignKey: 'perfume_id' });
 UserPerfume.belongsTo(Perfume, { foreignKey: 'perfume_id' });
 
-module.exports = { sequelize, User, Perfume, UserPerfume }; 
+module.exports = { sequelize, User, PerfumeBrand, Perfume, UserPerfume }; 

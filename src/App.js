@@ -19,7 +19,8 @@ import {
   Typography,
   Divider,
   List,
-  Avatar
+  Avatar,
+  Switch
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,7 +30,8 @@ import {
   DashboardOutlined,
   GiftOutlined,
   UserOutlined,
-  SettingOutlined
+  SettingOutlined,
+  ShopOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -41,14 +43,19 @@ const { TextArea } = Input;
 function App() {
   const [perfumes, setPerfumes] = useState([]);
   const [users, setUsers] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [brandModalVisible, setBrandModalVisible] = useState(false);
   const [editingPerfume, setEditingPerfume] = useState(null);
+  const [editingBrand, setEditingBrand] = useState(null);
   const [form] = Form.useForm();
+  const [brandForm] = Form.useForm();
   const [selectedKey, setSelectedKey] = useState('dashboard');
   const [stats, setStats] = useState({
     totalPerfumes: 0,
     totalUsers: 0,
+    totalBrands: 0,
     recentRecommendations: 0
   });
 
@@ -59,17 +66,20 @@ function App() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [perfumesRes, usersRes] = await Promise.all([
+      const [perfumesRes, usersRes, brandsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/perfumes`),
-        axios.get(`${API_BASE_URL}/users`)
+        axios.get(`${API_BASE_URL}/users`),
+        axios.get(`${API_BASE_URL}/brands/all`)
       ]);
       
       setPerfumes(perfumesRes.data.data || []);
       setUsers(usersRes.data.data || []);
+      setBrands(brandsRes.data.data || []);
       
       setStats({
         totalPerfumes: perfumesRes.data.data?.length || 0,
         totalUsers: usersRes.data.data?.length || 0,
+        totalBrands: brandsRes.data.data?.length || 0,
         recentRecommendations: Math.floor(Math.random() * 50) + 10 // 임시 데이터
       });
     } catch (error) {
@@ -88,7 +98,7 @@ function App() {
   const handleEditPerfume = (perfume) => {
     setEditingPerfume(perfume);
     form.setFieldsValue({
-      brand: perfume.brand,
+      brand_id: perfume.PerfumeBrand?.id,
       name: perfume.name,
       notes: perfume.notes,
       season_tags: perfume.season_tags,
@@ -124,10 +134,67 @@ function App() {
     }
   };
 
+  const handleAddBrand = () => {
+    setEditingBrand(null);
+    brandForm.resetFields();
+    setBrandModalVisible(true);
+  };
+
+  const handleEditBrand = (brand) => {
+    setEditingBrand(brand);
+    brandForm.setFieldsValue({
+      name: brand.name,
+      status: brand.status === 1
+    });
+    setBrandModalVisible(true);
+  };
+
+  const handleDeleteBrand = async (id) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/brands/${id}`);
+      message.success('브랜드가 삭제되었습니다.');
+      fetchData();
+    } catch (error) {
+      message.error('삭제 실패');
+    }
+  };
+
+  const handleBrandSubmit = async (values) => {
+    try {
+      if (editingBrand) {
+        await axios.put(`${API_BASE_URL}/brands/${editingBrand.id}`, {
+          name: values.name
+        });
+        message.success('브랜드가 수정되었습니다.');
+      } else {
+        await axios.post(`${API_BASE_URL}/brands`, {
+          name: values.name
+        });
+        message.success('브랜드가 등록되었습니다.');
+      }
+      setBrandModalVisible(false);
+      fetchData();
+    } catch (error) {
+      message.error('저장 실패');
+    }
+  };
+
+  const handleBrandStatusChange = async (brandId, status) => {
+    try {
+      await axios.patch(`${API_BASE_URL}/brands/${brandId}/status`, {
+        status: status ? 1 : 0
+      });
+      message.success(`브랜드가 ${status ? '활성화' : '비활성화'}되었습니다.`);
+      fetchData();
+    } catch (error) {
+      message.error('상태 변경 실패');
+    }
+  };
+
   const perfumeColumns = [
     {
       title: '브랜드',
-      dataIndex: 'brand',
+      dataIndex: ['PerfumeBrand', 'name'],
       key: 'brand',
       width: 120,
     },
@@ -212,6 +279,59 @@ function App() {
     },
   ];
 
+  const brandColumns = [
+    {
+      title: '브랜드명',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: '상태',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status, record) => (
+        <Switch
+          checked={status === 1}
+          onChange={(checked) => handleBrandStatusChange(record.id, checked)}
+          checkedChildren="활성"
+          unCheckedChildren="비활성"
+        />
+      ),
+    },
+    {
+      title: '등록일',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: '작업',
+      key: 'actions',
+      width: 150,
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEditBrand(record)}
+          />
+          <Popconfirm
+            title="정말 삭제하시겠습니까?"
+            onConfirm={() => handleDeleteBrand(record.id)}
+            okText="삭제"
+            cancelText="취소"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   const userColumns = [
     {
       title: '사용자명',
@@ -248,7 +368,7 @@ function App() {
           <div>
             <Title level={2}>📊 대시보드</Title>
             <Row gutter={16} style={{ marginBottom: 24 }}>
-              <Col span={8}>
+              <Col span={6}>
                 <Card>
                   <Statistic
                     title="총 향수 수"
@@ -257,7 +377,7 @@ function App() {
                   />
                 </Card>
               </Col>
-              <Col span={8}>
+              <Col span={6}>
                 <Card>
                   <Statistic
                     title="총 사용자 수"
@@ -266,7 +386,16 @@ function App() {
                   />
                 </Card>
               </Col>
-              <Col span={8}>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="총 브랜드 수"
+                    value={stats.totalBrands}
+                    prefix={<ShopOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
                 <Card>
                   <Statistic
                     title="최근 추천 수"
@@ -285,9 +414,9 @@ function App() {
                     renderItem={(perfume) => (
                       <List.Item>
                         <List.Item.Meta
-                          avatar={<Avatar style={{ backgroundColor: '#87d068' }}>{perfume.brand.charAt(0)}</Avatar>}
+                          avatar={<Avatar style={{ backgroundColor: '#87d068' }}>{perfume.PerfumeBrand?.name?.charAt(0) || '?'}</Avatar>}
                           title={perfume.name}
-                          description={perfume.brand}
+                          description={perfume.PerfumeBrand?.name}
                         />
                       </List.Item>
                     )}
@@ -341,6 +470,34 @@ function App() {
             />
           </div>
         );
+
+      case 'brands':
+        return (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Title level={2}>🏪 브랜드 관리</Title>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddBrand}
+              >
+                브랜드 등록
+              </Button>
+            </div>
+            <Table
+              columns={brandColumns}
+              dataSource={brands}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} / 총 ${total}개`,
+              }}
+            />
+          </div>
+        );
       
       case 'users':
         return (
@@ -378,6 +535,11 @@ function App() {
       label: '향수 관리',
     },
     {
+      key: 'brands',
+      icon: <ShopOutlined />,
+      label: '브랜드 관리',
+    },
+    {
       key: 'users',
       icon: <UserOutlined />,
       label: '사용자 관리',
@@ -412,6 +574,7 @@ function App() {
             <Title level={3} style={{ margin: 0 }}>
               {selectedKey === 'dashboard' && '📊 대시보드'}
               {selectedKey === 'perfumes' && '🎁 향수 관리'}
+              {selectedKey === 'brands' && '🏪 브랜드 관리'}
               {selectedKey === 'users' && '👥 사용자 관리'}
               {selectedKey === 'settings' && '⚙️ 설정'}
             </Title>
@@ -426,6 +589,7 @@ function App() {
         </Content>
       </Layout>
 
+      {/* 향수 등록/수정 모달 */}
       <Modal
         title={editingPerfume ? '향수 수정' : '향수 등록'}
         open={modalVisible}
@@ -441,11 +605,15 @@ function App() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="brand"
+                name="brand_id"
                 label="브랜드"
-                rules={[{ required: true, message: '브랜드를 입력해주세요!' }]}
+                rules={[{ required: true, message: '브랜드를 선택해주세요!' }]}
               >
-                <Input placeholder="예: Chanel" />
+                <Select placeholder="브랜드를 선택하세요">
+                  {brands.filter(brand => brand.status === 1).map(brand => (
+                    <Option key={brand.id} value={brand.id}>{brand.name}</Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -528,6 +696,50 @@ function App() {
               </Button>
               <Button type="primary" htmlType="submit">
                 {editingPerfume ? '수정' : '등록'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 브랜드 등록/수정 모달 */}
+      <Modal
+        title={editingBrand ? '브랜드 수정' : '브랜드 등록'}
+        open={brandModalVisible}
+        onCancel={() => setBrandModalVisible(false)}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={brandForm}
+          layout="vertical"
+          onFinish={handleBrandSubmit}
+        >
+          <Form.Item
+            name="name"
+            label="브랜드명"
+            rules={[{ required: true, message: '브랜드명을 입력해주세요!' }]}
+          >
+            <Input placeholder="예: Chanel" />
+          </Form.Item>
+
+          {editingBrand && (
+            <Form.Item
+              name="status"
+              label="상태"
+              valuePropName="checked"
+            >
+              <Switch checkedChildren="활성" unCheckedChildren="비활성" />
+            </Form.Item>
+          )}
+
+          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
+            <Space>
+              <Button onClick={() => setBrandModalVisible(false)}>
+                취소
+              </Button>
+              <Button type="primary" htmlType="submit">
+                {editingBrand ? '수정' : '등록'}
               </Button>
             </Space>
           </Form.Item>

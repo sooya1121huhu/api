@@ -1,11 +1,17 @@
 const express = require('express');
-const { Perfume } = require('../models');
+const { Perfume, PerfumeBrand } = require('../models');
 const router = express.Router();
 
-// 향수 리스트 조회 (활성 상태만)
+// 향수 리스트 조회 (활성 상태만, 브랜드 정보 포함)
 router.get('/', async (req, res) => {
   try {
     const perfumes = await Perfume.findAll({
+      include: [{
+        model: PerfumeBrand,
+        as: 'PerfumeBrand',
+        attributes: ['id', 'name']
+      }],
+      where: { status: 1 },
       order: [['created_at', 'DESC']]
     });
     
@@ -23,10 +29,16 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 향수 상세 조회
+// 향수 상세 조회 (브랜드 정보 포함)
 router.get('/:id', async (req, res) => {
   try {
-    const perfume = await Perfume.findByPk(req.params.id);
+    const perfume = await Perfume.findByPk(req.params.id, {
+      include: [{
+        model: PerfumeBrand,
+        as: 'PerfumeBrand',
+        attributes: ['id', 'name', 'status']
+      }]
+    });
     
     if (!perfume) {
       return res.status(404).json({
@@ -52,7 +64,13 @@ router.get('/:id', async (req, res) => {
 // 유사 향수 추천 API
 router.get('/:id/similar', async (req, res) => {
   try {
-    const perfume = await Perfume.findByPk(req.params.id);
+    const perfume = await Perfume.findByPk(req.params.id, {
+      include: [{
+        model: PerfumeBrand,
+        as: 'PerfumeBrand',
+        attributes: ['id', 'name']
+      }]
+    });
     
     if (!perfume) {
       return res.status(404).json({
@@ -76,8 +94,13 @@ router.get('/:id/similar', async (req, res) => {
       });
     }
 
-    // 모든 활성 향수 조회 (현재 향수 제외)
+    // 모든 활성 향수 조회 (현재 향수 제외, 브랜드 정보 포함)
     const allPerfumes = await Perfume.findAll({
+      include: [{
+        model: PerfumeBrand,
+        as: 'PerfumeBrand',
+        attributes: ['id', 'name']
+      }],
       where: {
         id: { [require('sequelize').Op.ne]: req.params.id },
         status: 1
@@ -132,19 +155,28 @@ router.get('/:id/similar', async (req, res) => {
 // 향수 등록
 router.post('/', async (req, res) => {
   try {
-    const { brand, name, notes, season_tags, weather_tags, analysis_reason, url } = req.body;
+    const { brand_id, name, notes, season_tags, weather_tags, analysis_reason } = req.body;
     
     // 필수 필드 검증
-    if (!brand || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
+    if (!brand_id || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
       return res.status(400).json({
         success: false,
         message: '모든 필수 필드를 입력해주세요.'
       });
     }
     
+    // 브랜드 존재 확인
+    const brand = await PerfumeBrand.findByPk(brand_id);
+    if (!brand || brand.status !== 1) {
+      return res.status(400).json({
+        success: false,
+        message: '유효하지 않은 브랜드입니다.'
+      });
+    }
+    
     // 중복 검사
     const existingPerfume = await Perfume.findOne({
-      where: { brand, name, status: 1 }
+      where: { brand_id, name, status: 1 }
     });
     
     if (existingPerfume) {
@@ -156,9 +188,8 @@ router.post('/', async (req, res) => {
     
     // 향수 저장
     const perfume = await Perfume.create({
-      brand,
+      brand_id,
       name,
-      url,
       notes,
       season_tags,
       weather_tags,
@@ -166,10 +197,19 @@ router.post('/', async (req, res) => {
       status: 1
     });
     
+    // 브랜드 정보와 함께 반환
+    const perfumeWithBrand = await Perfume.findByPk(perfume.id, {
+      include: [{
+        model: PerfumeBrand,
+        as: 'PerfumeBrand',
+        attributes: ['id', 'name']
+      }]
+    });
+    
     res.status(201).json({
       success: true,
       message: '향수가 성공적으로 등록되었습니다.',
-      data: perfume
+      data: perfumeWithBrand
     });
     
   } catch (error) {
@@ -185,10 +225,10 @@ router.post('/', async (req, res) => {
 // 향수 수정
 router.put('/:id', async (req, res) => {
   try {
-    const { brand, name, notes, season_tags, weather_tags, analysis_reason, url, status } = req.body;
+    const { brand_id, name, notes, season_tags, weather_tags, analysis_reason, status } = req.body;
     
     // 필수 필드 검증
-    if (!brand || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
+    if (!brand_id || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
       return res.status(400).json({
         success: false,
         message: '모든 필수 필드를 입력해주세요.'
@@ -204,10 +244,19 @@ router.put('/:id', async (req, res) => {
       });
     }
     
+    // 브랜드 존재 확인
+    const brand = await PerfumeBrand.findByPk(brand_id);
+    if (!brand || brand.status !== 1) {
+      return res.status(400).json({
+        success: false,
+        message: '유효하지 않은 브랜드입니다.'
+      });
+    }
+    
     // 중복 검사 (자신 제외)
     const existingPerfume = await Perfume.findOne({
       where: { 
-        brand, 
+        brand_id, 
         name, 
         status: 1,
         id: { [require('sequelize').Op.ne]: req.params.id }
@@ -223,9 +272,8 @@ router.put('/:id', async (req, res) => {
     
     // 향수 수정
     await perfume.update({
-      brand,
+      brand_id,
       name,
-      url,
       notes,
       season_tags,
       weather_tags,
@@ -233,10 +281,19 @@ router.put('/:id', async (req, res) => {
       status: typeof status !== 'undefined' ? status : perfume.status
     });
     
+    // 브랜드 정보와 함께 반환
+    const updatedPerfume = await Perfume.findByPk(req.params.id, {
+      include: [{
+        model: PerfumeBrand,
+        as: 'PerfumeBrand',
+        attributes: ['id', 'name']
+      }]
+    });
+    
     res.json({
       success: true,
       message: '향수가 성공적으로 수정되었습니다.',
-      data: perfume
+      data: updatedPerfume
     });
     
   } catch (error) {

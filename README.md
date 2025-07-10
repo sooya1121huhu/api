@@ -15,14 +15,26 @@
 npm run install:all
 ```
 
-### 2. 통합 기동 (모든 서비스 한번에)
+### 2. 데이터베이스 설정
+```bash
+# 데이터베이스 생성 및 테이블 생성
+mysql -u root -p < database/schema.sql
+
+# 기존 데이터베이스에서 브랜드 테이블 분리 (기존 데이터가 있는 경우)
+mysql -u root -p < database/update_schema.sql
+
+# 테스트 데이터 삽입
+mysql -u root -p < database/test_data.sql
+```
+
+### 3. 통합 기동 (모든 서비스 한번에)
 ```bash
 npm start
 # 또는
 npm run dev
 ```
 
-### 3. 개별 서비스 기동
+### 4. 개별 서비스 기동
 ```bash
 # API 서버만
 npm run start:api
@@ -112,9 +124,103 @@ OPENAI_API_KEY=your_openai_api_key
 
 ## 📊 API 엔드포인트
 
+### 기본 엔드포인트
 - `GET /` - 서버 상태 확인
 - `GET /api/health` - 헬스 체크
-- `GET /api/users` - 사용자 관리
-- `GET /api/perfumes` - 향수 정보
-- `GET /api/recommendations` - 추천 시스템
-- `GET /api/user-perfumes` - 사용자 향수 관리 
+
+### 사용자 관리
+- `GET /api/users` - 사용자 목록 조회
+- `POST /api/users` - 사용자 등록
+- `PUT /api/users/:id` - 사용자 수정
+- `DELETE /api/users/:id` - 사용자 삭제
+
+### 브랜드 관리 (신규)
+- `GET /api/brands` - 활성 브랜드 목록 조회
+- `GET /api/brands/all` - 모든 브랜드 목록 조회 (관리자용)
+- `POST /api/brands` - 브랜드 등록
+- `PUT /api/brands/:id` - 브랜드 수정
+- `PATCH /api/brands/:id/status` - 브랜드 상태 변경
+- `DELETE /api/brands/:id` - 브랜드 삭제
+
+### 향수 관리 (업데이트됨)
+- `GET /api/perfumes` - 향수 목록 조회 (브랜드 정보 포함)
+- `POST /api/perfumes` - 향수 등록 (brand_id 사용)
+- `PUT /api/perfumes/:id` - 향수 수정
+- `DELETE /api/perfumes/:id` - 향수 삭제
+- `GET /api/perfumes/:id/similar` - 유사 향수 추천
+
+### 사용자-향수 관계
+- `GET /api/user-perfumes` - 사용자별 향수 목록 조회
+- `POST /api/user-perfumes` - 사용자 향수 추가
+- `DELETE /api/user-perfumes/:id` - 사용자 향수 삭제
+
+### 추천 시스템
+- `GET /api/recommendations` - 향수 추천
+
+## 🗄️ 데이터베이스 스키마
+
+### 주요 테이블
+- **users** - 사용자 정보
+- **perfumes_brand** - 브랜드 정보 (신규)
+- **perfumes** - 향수 정보 (brand_id로 브랜드 연결)
+- **user_perfumes** - 사용자-향수 관계
+
+### 브랜드 테이블 분리
+기존 `perfumes` 테이블의 `brand` 컬럼을 별도 `perfumes_brand` 테이블로 분리하여 관리합니다.
+
+## 🔄 마이그레이션 가이드
+
+### 기존 데이터베이스에서 브랜드 테이블 분리
+1. `database/update_schema.sql` 스크립트 실행
+2. 기존 브랜드 데이터를 `perfumes_brand` 테이블로 마이그레이션
+3. `perfumes` 테이블의 `brand` 컬럼을 `brand_id`로 변경
+4. 외래키 제약조건 추가
+
+### 마이그레이션 스크립트 실행
+```bash
+# 기존 데이터베이스가 있는 경우
+mysql -u root -p < database/update_schema.sql
+
+# 새로운 데이터베이스 생성
+mysql -u root -p < database/schema.sql
+
+# 테스트 데이터 삽입
+mysql -u root -p < database/test_data.sql
+```
+
+## 🎯 주요 기능
+
+### 브랜드 관리 (신규)
+- 브랜드 등록/수정/삭제
+- 브랜드 상태 관리 (활성/비활성)
+- 향수와 브랜드 연결 관리
+
+### 향수 관리 (업데이트됨)
+- 브랜드 선택 드롭다운으로 변경
+- 브랜드 정보와 함께 표시
+- 유사 향수 추천 기능
+
+### 사용자 관리
+- 사용자 등록/수정/삭제
+- 사용자별 향수 관리
+
+### 추천 시스템
+- 노트 기반 유사 향수 추천
+- 계절/날씨 태그 기반 추천
+
+## 📚 API 문서
+
+자세한 API 문서는 `API_DOCS.md` 파일을 참조하세요.
+
+## 🧪 테스트
+
+```bash
+# API 서버 테스트
+curl http://localhost:8080/api/health
+
+# 브랜드 API 테스트
+curl http://localhost:8080/api/brands
+
+# 향수 API 테스트
+curl http://localhost:8080/api/perfumes
+``` 
