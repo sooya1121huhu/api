@@ -67,21 +67,33 @@ router.delete('/:id', auth, async (req, res) => {
 // 향수별 보유 유저 수 집계 (관리자용)
 router.get('/summary', async (req, res) => {
   try {
-    const { Perfume, UserPerfume } = require('../models');
+    const { Perfume, UserPerfume, PerfumeBrand } = require('../models');
     // 향수별 보유 유저 수 집계
     const results = await UserPerfume.findAll({
       attributes: [
         'perfume_id',
         [Sequelize.fn('COUNT', Sequelize.col('user_id')), 'user_count']
       ],
-      group: ['perfume_id'],
-      include: [{ model: Perfume, attributes: ['name'] }],
+      group: ['perfume_id', 'Perfume.id', 'Perfume->PerfumeBrand.id'],
+      include: [
+        {
+          model: Perfume,
+          attributes: ['name'],
+          include: [
+            {
+              model: PerfumeBrand,
+              attributes: ['name']
+            }
+          ]
+        }
+      ],
       raw: true
     });
-    // 결과를 향수명/유저수 형태로 가공
+    // 결과를 향수명/브랜드명/유저수 형태로 가공
     const summary = results.map(r => ({
       perfume_id: r.perfume_id,
       perfume_name: r['Perfume.name'],
+      brand_name: r['Perfume.PerfumeBrand.name'],
       user_count: r.user_count
     }));
     res.json({ success: true, data: summary });
