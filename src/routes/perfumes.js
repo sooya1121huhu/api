@@ -107,12 +107,12 @@ router.get('/:id/similar', async (req, res) => {
       }
     });
 
-    // 유사 향수 필터링 (3개 이상의 공통 노트가 있는 향수)
+    // 유사 향수 필터링 (2개 이상의 공통 노트가 있는 향수)
     const similarPerfumes = allPerfumes.filter(targetPerfume => {
       const targetNotes = targetPerfume.notes || [];
       console.log('targetPerfume.notes:', targetPerfume.notes, 'type:', typeof targetPerfume.notes);
       const commonNotes = currentNotes.filter(note => targetNotes.includes(note));
-      return commonNotes.length >= 3;
+      return commonNotes.length >= 2;
     }).map(targetPerfume => {
       const targetNotes = targetPerfume.notes || [];
       const commonNotes = currentNotes.filter(note => targetNotes.includes(note));
