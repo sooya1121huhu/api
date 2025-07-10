@@ -49,6 +49,86 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// 유사 향수 추천 API
+router.get('/:id/similar', async (req, res) => {
+  try {
+    const perfume = await Perfume.findByPk(req.params.id);
+    
+    if (!perfume) {
+      return res.status(404).json({
+        success: false,
+        message: '향수를 찾을 수 없습니다.'
+      });
+    }
+
+    // 현재 향수의 노트 배열
+    console.log('perfume.notes:', perfume.notes, 'type:', typeof perfume.notes);
+    const currentNotes = perfume.notes || [];
+    
+    if (currentNotes.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          target_perfume: perfume,
+          similar_perfumes: [],
+          message: '노트 정보가 없어 유사 향수를 찾을 수 없습니다.'
+        }
+      });
+    }
+
+    // 모든 활성 향수 조회 (현재 향수 제외)
+    const allPerfumes = await Perfume.findAll({
+      where: {
+        id: { [require('sequelize').Op.ne]: req.params.id },
+        status: 1
+      }
+    });
+
+    // 유사 향수 필터링 (3개 이상의 공통 노트가 있는 향수)
+    const similarPerfumes = allPerfumes.filter(targetPerfume => {
+      const targetNotes = targetPerfume.notes || [];
+      console.log('targetPerfume.notes:', targetPerfume.notes, 'type:', typeof targetPerfume.notes);
+      const commonNotes = currentNotes.filter(note => targetNotes.includes(note));
+      return commonNotes.length >= 3;
+    }).map(targetPerfume => {
+      const targetNotes = targetPerfume.notes || [];
+      const commonNotes = currentNotes.filter(note => targetNotes.includes(note));
+      
+      return {
+        ...targetPerfume.toJSON(),
+        common_notes: commonNotes,
+        common_notes_count: commonNotes.length
+      };
+    })
+    // 자기 자신은 유사 향수에서 제외
+    .filter(perfume => perfume.id != req.params.id);
+
+    // 공통 노트 개수순으로 정렬 (높은 순)
+    similarPerfumes.sort((a, b) => b.common_notes_count - a.common_notes_count);
+
+    // 상위 10개만 반환
+    const topSimilarPerfumes = similarPerfumes.slice(0, 10);
+
+    res.json({
+      success: true,
+      data: {
+        target_perfume: perfume,
+        similar_perfumes: topSimilarPerfumes,
+        total_similar_count: similarPerfumes.length,
+        returned_count: topSimilarPerfumes.length
+      }
+    });
+
+  } catch (error) {
+    console.error('유사 향수 추천 오류:', error);
+    res.status(500).json({
+      success: false,
+      message: '유사 향수 추천 중 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // 향수 등록
 router.post('/', async (req, res) => {
   try {
