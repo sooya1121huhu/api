@@ -1,5 +1,6 @@
 const express = require('express');
 const { Perfume, PerfumeBrand } = require('../models');
+const { calculateNoteSimilarity } = require('../utils/noteSimilarity');
 const router = express.Router();
 
 // 향수 리스트 조회 (활성 상태만, 브랜드 정보 포함)
@@ -111,16 +112,20 @@ router.get('/:id/similar', async (req, res) => {
     const similarPerfumes = allPerfumes.filter(targetPerfume => {
       const targetNotes = targetPerfume.notes || [];
       console.log('targetPerfume.notes:', targetPerfume.notes, 'type:', typeof targetPerfume.notes);
-      const commonNotes = currentNotes.filter(note => targetNotes.includes(note));
-      return commonNotes.length >= 2;
+      
+      // 새로운 노트 유사성 계산 함수 사용
+      const similarity = calculateNoteSimilarity(currentNotes, targetNotes);
+      return similarity.count >= 2;
     }).map(targetPerfume => {
       const targetNotes = targetPerfume.notes || [];
-      const commonNotes = currentNotes.filter(note => targetNotes.includes(note));
+      
+      // 새로운 노트 유사성 계산 함수 사용
+      const similarity = calculateNoteSimilarity(currentNotes, targetNotes);
       
       return {
         ...targetPerfume.toJSON(),
-        common_notes: commonNotes,
-        common_notes_count: commonNotes.length
+        common_notes: similarity.commonNotes,
+        common_notes_count: similarity.count
       };
     })
     // 자기 자신은 유사 향수에서 제외
