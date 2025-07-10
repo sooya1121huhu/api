@@ -131,32 +131,37 @@ function calculateNoteSimilarity(notes1, notes2) {
   if (!Array.isArray(notes1) || !Array.isArray(notes2)) {
     return { commonNotes: [], count: 0 };
   }
-  
+
   // 각 노트를 확장하여 유사한 노트들 포함
   const expandedNotes1 = notes1.flatMap(note => findSimilarNotes(note));
   const expandedNotes2 = notes2.flatMap(note => findSimilarNotes(note));
-  
+
   // 공통 노트 찾기 (대소문자 무시)
-  const commonNotes = expandedNotes1.filter(note1 => 
-    expandedNotes2.some(note2 => 
+  const commonNotes = expandedNotes1.filter(note1 =>
+    expandedNotes2.some(note2 =>
       note1.toLowerCase() === note2.toLowerCase()
     )
   );
-  
-  // 중복 제거하고 원본 노트명으로 정규화
-  const uniqueCommonNotes = [...new Set(commonNotes)].map(note => {
-    // 원본 노트명으로 되돌리기
+
+  // 1. 소문자로 중복 제거
+  const uniqueCommonNotesLower = [...new Set(commonNotes.map(n => n.toLowerCase()))];
+
+  // 2. 원본 노트명으로 복원
+  const normalizedNotes = uniqueCommonNotesLower.map(note => {
     for (const [key, similarNotes] of Object.entries(noteSimilarityMap)) {
-      if (similarNotes.includes(note.toLowerCase())) {
+      if (key === note || similarNotes.includes(note)) {
         return key;
       }
     }
     return note;
   });
-  
+
+  // 3. 최종적으로 한 번 더 중복 제거
+  const uniqueNormalizedNotes = [...new Set(normalizedNotes)];
+
   return {
-    commonNotes: uniqueCommonNotes,
-    count: uniqueCommonNotes.length
+    commonNotes: uniqueNormalizedNotes,
+    count: uniqueNormalizedNotes.length
   };
 }
 
