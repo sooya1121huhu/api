@@ -296,8 +296,21 @@ class FragranticaScraper {
   async waitForNotes(page) {
     logWithTimestamp('⏳ 노트 로딩 대기 중...');
     try {
-      await page.waitForSelector('.pyramid', { timeout: 15000 });
-      logWithTimestamp('✅ 노트 요소 발견');
+      // 1단계: .pyramid 요소 찾기 시도 (top/middle/base 노트용)
+      try {
+        await page.waitForSelector('.pyramid', { timeout: 5000 });
+        logWithTimestamp('✅ pyramid 노트 요소 발견');
+      } catch (error) {
+        logWithTimestamp('⚠️ pyramid 요소 없음 - fragrance_notes만 있는 향수일 수 있음');
+      }
+      
+      // 2단계: fragrance_notes용 flex 컨테이너 찾기 시도
+      try {
+        await page.waitForSelector('div[style*="display: flex"][style*="justify-content: center"][style*="text-align: center"][style*="flex-flow: wrap"][style*="align-items: flex-end"][style*="padding: 0.5rem"]', { timeout: 5000 });
+        logWithTimestamp('✅ fragrance_notes flex 컨테이너 발견');
+      } catch (error) {
+        logWithTimestamp('⚠️ fragrance_notes flex 컨테이너 없음');
+      }
       
       // 노트 완전 로드 대기
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -314,6 +327,15 @@ class FragranticaScraper {
       try {
         await this.init();
         const page = await this.browser.newPage();
+        
+        // 브라우저 콘솔 로그를 서버로 출력
+        page.on('console', msg => {
+          const text = msg.text();
+          if (text.includes('🔍') || text.includes('✅')) {
+            logWithTimestamp(`[브라우저] ${text}`);
+          }
+        });
+        
         logWithTimestamp(`🔄 새 탭 생성 및 이동: ${url}`);
         await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
         await this.waitForAccords(page);
@@ -527,23 +549,52 @@ class FragranticaScraper {
         }
       });
       
-      // Fallback: top/middle/base가 모두 비어 있고 노트가 있으면 fragrance_notes로 간주
-      if (!result.top.length && !result.middle.length && !result.base.length && result.fragrance.length === 0) {
-        const noteDivs = document.querySelectorAll('div[style*="margin: 0.2rem"], div');
-        noteDivs.forEach(noteDiv => {
-          const subDivs = noteDiv.querySelectorAll('div');
-          let noteText = null;
-          if (subDivs.length > 1) {
-            noteText = subDivs[1].textContent.trim();
-          } else if (subDivs.length === 1) {
-            noteText = subDivs[0].textContent.trim();
-          } else {
-            noteText = noteDiv.textContent.trim();
-          }
-          if (noteText && !result.fragrance.includes(noteText)) {
-            result.fragrance.push(noteText);
-          }
-        });
+      // top/middle/base가 모두 비어 있으면 fragrance_notes 찾기
+      if (!result.top.length && !result.middle.length && !result.base.length) {
+        console.log('🔍 fragrance_notes 찾기 시작');
+        
+        // 1. 더 간단한 선택자로 flex 컨테이너 찾기
+        const flexContainer = document.querySelector('div[style*="display: flex"][style*="padding: 0.5rem"]');
+        
+        console.log('🔍 flexContainer 찾음:', !!flexContainer);
+        
+        if (flexContainer) {
+          console.log('🔍 flexContainer HTML:', flexContainer.outerHTML);
+          
+          // 2. 그 안의 margin: 0.2rem 요소들 찾기
+          const noteElements = flexContainer.querySelectorAll('div[style*="margin: 0.2rem"]');
+          
+          console.log('🔍 noteElements 개수:', noteElements.length);
+          
+          noteElements.forEach((noteElement, index) => {
+            console.log(`🔍 noteElement ${index + 1} HTML:`, noteElement.outerHTML);
+            
+            // 3. 2번째 div에서 </a> 다음 텍스트 추출
+            const divs = noteElement.querySelectorAll('div');
+            console.log(`🔍 noteElement ${index + 1} divs 개수:`, divs.length);
+            
+            if (divs.length >= 2) {
+              const secondDiv = divs[1];
+              console.log(`🔍 noteElement ${index + 1} secondDiv HTML:`, secondDiv.outerHTML);
+              
+              const anchor = secondDiv.querySelector('a');
+              console.log(`🔍 noteElement ${index + 1} anchor 찾음:`, !!anchor);
+              
+              if (anchor) {
+                // </a> 다음 텍스트 추출 (anchor 태그 밖의 텍스트)
+                const anchorText = secondDiv.textContent.trim();
+                console.log(`🔍 noteElement ${index + 1} anchorText:`, anchorText);
+                
+                if (anchorText && !result.fragrance.includes(anchorText)) {
+                  result.fragrance.push(anchorText);
+                  console.log(`✅ fragrance_notes에 추가:`, anchorText);
+                }
+              }
+            }
+          });
+        }
+        
+        console.log('🔍 최종 fragrance_notes:', result.fragrance);
       }
       
       return result;
