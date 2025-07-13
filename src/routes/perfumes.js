@@ -80,11 +80,20 @@ router.get('/:id/similar', async (req, res) => {
       });
     }
 
-    // 현재 향수의 노트 배열
-    console.log('perfume.notes:', perfume.notes, 'type:', typeof perfume.notes);
-    const currentNotes = perfume.notes || [];
+    // 현재 향수의 모든 노트 배열 (top + middle + base + fragrance)
+    const currentTopNotes = perfume.top_notes || [];
+    const currentMiddleNotes = perfume.middle_notes || [];
+    const currentBaseNotes = perfume.base_notes || [];
+    const currentFragranceNotes = perfume.fragrance_notes || [];
     
-    if (currentNotes.length === 0) {
+    const allCurrentNotes = [
+      ...currentTopNotes,
+      ...currentMiddleNotes,
+      ...currentBaseNotes,
+      ...currentFragranceNotes
+    ];
+    
+    if (allCurrentNotes.length === 0) {
       return res.json({
         success: true,
         data: {
@@ -110,17 +119,36 @@ router.get('/:id/similar', async (req, res) => {
 
     // 유사 향수 필터링 (2개 이상의 공통 노트가 있는 향수)
     const similarPerfumes = allPerfumes.filter(targetPerfume => {
-      const targetNotes = targetPerfume.notes || [];
-      console.log('targetPerfume.notes:', targetPerfume.notes, 'type:', typeof targetPerfume.notes);
+      const targetTopNotes = targetPerfume.top_notes || [];
+      const targetMiddleNotes = targetPerfume.middle_notes || [];
+      const targetBaseNotes = targetPerfume.base_notes || [];
+      const targetFragranceNotes = targetPerfume.fragrance_notes || [];
+      
+      const allTargetNotes = [
+        ...targetTopNotes,
+        ...targetMiddleNotes,
+        ...targetBaseNotes,
+        ...targetFragranceNotes
+      ];
       
       // 새로운 노트 유사성 계산 함수 사용
-      const similarity = calculateNoteSimilarity(currentNotes, targetNotes);
+      const similarity = calculateNoteSimilarity(allCurrentNotes, allTargetNotes);
       return similarity.count >= 2;
     }).map(targetPerfume => {
-      const targetNotes = targetPerfume.notes || [];
+      const targetTopNotes = targetPerfume.top_notes || [];
+      const targetMiddleNotes = targetPerfume.middle_notes || [];
+      const targetBaseNotes = targetPerfume.base_notes || [];
+      const targetFragranceNotes = targetPerfume.fragrance_notes || [];
+      
+      const allTargetNotes = [
+        ...targetTopNotes,
+        ...targetMiddleNotes,
+        ...targetBaseNotes,
+        ...targetFragranceNotes
+      ];
       
       // 새로운 노트 유사성 계산 함수 사용
-      const similarity = calculateNoteSimilarity(currentNotes, targetNotes);
+      const similarity = calculateNoteSimilarity(allCurrentNotes, allTargetNotes);
       
       return {
         ...targetPerfume.toJSON(),
@@ -160,13 +188,13 @@ router.get('/:id/similar', async (req, res) => {
 // 향수 등록
 router.post('/', async (req, res) => {
   try {
-    const { brand_id, name, notes, season_tags, weather_tags, analysis_reason } = req.body;
+    const { brand_id, name, top_notes, middle_notes, base_notes, fragrance_notes, accord_1_name, accord_1_width, accord_2_name, accord_2_width } = req.body;
     
     // 필수 필드 검증
-    if (!brand_id || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
+    if (!brand_id || !name) {
       return res.status(400).json({
         success: false,
-        message: '모든 필수 필드를 입력해주세요.'
+        message: '브랜드와 향수명은 필수입니다.'
       });
     }
     
@@ -195,10 +223,14 @@ router.post('/', async (req, res) => {
     const perfume = await Perfume.create({
       brand_id,
       name,
-      notes,
-      season_tags,
-      weather_tags,
-      analysis_reason,
+      accord_1_name: accord_1_name || null,
+      accord_1_width: accord_1_width || null,
+      accord_2_name: accord_2_name || null,
+      accord_2_width: accord_2_width || null,
+      top_notes: top_notes || [],
+      middle_notes: middle_notes || [],
+      base_notes: base_notes || [],
+      fragrance_notes: fragrance_notes || [],
       status: 1
     });
     
@@ -230,13 +262,13 @@ router.post('/', async (req, res) => {
 // 향수 수정
 router.put('/:id', async (req, res) => {
   try {
-    const { brand_id, name, notes, season_tags, weather_tags, analysis_reason, status } = req.body;
+    const { brand_id, name, top_notes, middle_notes, base_notes, fragrance_notes, accord_1_name, accord_1_width, accord_2_name, accord_2_width, status } = req.body;
     
     // 필수 필드 검증
-    if (!brand_id || !name || !notes || !season_tags || !weather_tags || !analysis_reason) {
+    if (!brand_id || !name) {
       return res.status(400).json({
         success: false,
-        message: '모든 필수 필드를 입력해주세요.'
+        message: '브랜드와 향수명은 필수입니다.'
       });
     }
     
@@ -279,10 +311,14 @@ router.put('/:id', async (req, res) => {
     await perfume.update({
       brand_id,
       name,
-      notes,
-      season_tags,
-      weather_tags,
-      analysis_reason,
+      accord_1_name: accord_1_name || null,
+      accord_1_width: accord_1_width || null,
+      accord_2_name: accord_2_name || null,
+      accord_2_width: accord_2_width || null,
+      top_notes: top_notes || [],
+      middle_notes: middle_notes || [],
+      base_notes: base_notes || [],
+      fragrance_notes: fragrance_notes || [],
       status: typeof status !== 'undefined' ? status : perfume.status
     });
     

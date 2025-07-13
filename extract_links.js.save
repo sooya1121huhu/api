@@ -1,0 +1,14 @@
+
+const regex = /href="(https:\/\/www\.fragrantica\.com\/notes\/[^"]+\.html)"/g;
+const links = [];
+let match;
+while ((match = regex.exec(html)) !== null) {
+  links.push(match[1]);
+}
+
+console.log(links);
+console.log(`총 ${links.length}개 링크 추출됨`);
+
+const fs = require('fs');
+fs.writeFileSync('note_links.json', JSON.stringify(links, null, 2), 'utf-8');
+

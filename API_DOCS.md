@@ -247,6 +247,178 @@
 #### 5.1 향수 추천
 **URL:** `GET /api/recommendations`
 
+### 6. Fragrantica 스크래핑 API (신규)
+
+#### 6.1 단일 향수 스크래핑
+**URL:** `POST /api/scrape/perfume`
+
+**요청 본문:**
+```json
+{
+  "url": "https://www.fragrantica.com/perfume/Chanel/Chanel-No-5-EDP-612.html",
+  "auto_save": false
+}
+```
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "job_id": "1703123456789",
+  "message": "스크래핑이 완료되었습니다.",
+  "data": {
+    "brand": "Chanel",
+    "name": "Chanel N°5 EDP",
+    "notes": ["알데하이드", "이리스", "베티버", "바닐라", "파츌리"],
+    "season_tags": ["봄", "가을", "겨울"],
+    "weather_tags": ["맑음", "흐림", "비"],
+    "analysis_reason": "알데하이드, 이리스, 베티버 노트가 특징적인 향수입니다. 봄, 가을, 겨울 계절에 특히 적합합니다. 개인적인 취향과 상황에 맞게 선택하시기 바랍니다.",
+    "url": "https://www.fragrantica.com/perfume/Chanel/Chanel-No-5-EDP-612.html"
+  },
+  "is_duplicate": false
+}
+```
+
+#### 6.2 브랜드별 향수 목록 스크래핑
+**URL:** `POST /api/scrape/brand`
+
+**요청 본문:**
+```json
+{
+  "brand_url": "https://www.fragrantica.com/designers/Chanel.html",
+  "limit": null,
+  "auto_save": false,
+  "batch_save": false
+}
+```
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "job_id": "1703123456790",
+  "message": "브랜드 스크래핑 완료: 17개 처리, 5개 저장, 3개 중복",
+      "data": {
+      "total_processed": 17,
+      "saved_count": 5,
+      "duplicate_count": 3,
+      "failed_count": 2,
+    "results": [
+      {
+        "brand": "Chanel",
+        "name": "Chanel N°5 EDP",
+        "notes": ["알데하이드", "이리스", "베티버"],
+        "status": "saved"
+      }
+    ]
+  }
+}
+```
+
+#### 6.3 스크래핑 작업 상태 조회
+**URL:** `GET /api/scrape/status/:jobId`
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "job_id": "1703123456789",
+  "status": "completed",
+  "progress": 100,
+  "data": { ... }
+}
+```
+
+#### 6.4 스크래핑 작업 목록 조회
+**URL:** `GET /api/scrape/jobs`
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "job_id": "1703123456789",
+      "status": "completed",
+      "progress": 100
+    }
+  ]
+}
+```
+
+#### 6.5 실패한 향수 재시도 스크래핑
+**URL:** `POST /api/scrape/retry-failed`
+
+**요청 본문:**
+```json
+{
+  "job_id": "1703123456789",
+  "auto_save": true
+}
+```
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "job_id": "1703123456791",
+  "message": "재시도 완료: 4개 중 2개 성공, 2개 여전히 실패",
+  "data": {
+    "total_retried": 4,
+    "success_count": 2,
+    "still_failed_count": 2,
+    "results": [
+      {
+        "brand": "Matiere Premiere",
+        "name": "Encens Suave",
+        "notes": ["바닐라", "로즈", "재스민"],
+        "status": "saved"
+      }
+    ]
+  }
+}
+```
+
+#### 6.6 스크래핑 작업 중단
+**URL:** `POST /api/scrape/cancel/:jobId`
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "job_id": "1703123456789",
+  "message": "스크래핑 작업이 중단되었습니다.",
+  "data": {
+    "status": "cancelled",
+    "progress": 45
+  }
+}
+```
+
+#### 6.7 모든 스크래핑 작업 중단
+**URL:** `POST /api/scrape/cancel-all`
+
+**응답 예시:**
+```json
+{
+  "success": true,
+  "message": "3개의 스크래핑 작업이 중단되었습니다.",
+  "data": {
+    "cancelled_count": 3
+  }
+}
+```
+
+#### 스크래핑 기능 특징
+- **Fragrantica 전용**: Fragrantica.com 사이트에서만 스크래핑 가능
+- **자동 중복 검사**: 이미 등록된 향수는 자동으로 감지
+- **브랜드 자동 생성**: 새로운 브랜드는 자동으로 생성
+- **노트 정규화**: 영어 노트명을 한국어로 자동 변환
+- **데이터 검증**: 저장 전 향수 데이터 품질 검증
+- **배치 저장**: 트랜잭션을 사용한 안전한 배치 저장
+- **진행률 추적**: 실시간 스크래핑 진행률 확인
+- **배치 처리**: 브랜드별로 여러 향수를 한 번에 처리
+
 ## 데이터베이스 스키마
 
 ### perfumes_brand 테이블

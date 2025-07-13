@@ -18,6 +18,7 @@ const sequelize = new Sequelize(
 const User = sequelize.define('User', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+  email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
   password: { type: DataTypes.STRING(255), allowNull: false },
   status: { type: DataTypes.TINYINT, allowNull: false, defaultValue: 1, comment: '0: 삭제, 1: 활성' }
 }, {
@@ -44,11 +45,22 @@ const Perfume = sequelize.define('Perfume', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   brand_id: { type: DataTypes.INTEGER, allowNull: false },
   name: { type: DataTypes.STRING(200), allowNull: false },
-  notes: { type: DataTypes.JSON, allowNull: false },
-  season_tags: { type: DataTypes.JSON, allowNull: false },
-  weather_tags: { type: DataTypes.JSON, allowNull: false },
-  analysis_reason: { type: DataTypes.TEXT, allowNull: false },
-  status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
+  url: { type: DataTypes.TEXT, allowNull: true, unique: true },
+  status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+  accord_1_name: { type: DataTypes.STRING(50), allowNull: true },
+  accord_1_width: { type: DataTypes.DECIMAL(5,2), allowNull: true },
+  accord_2_name: { type: DataTypes.STRING(50), allowNull: true },
+  accord_2_width: { type: DataTypes.DECIMAL(5,2), allowNull: true },
+  accord_3_name: { type: DataTypes.STRING(50), allowNull: true },
+  accord_3_width: { type: DataTypes.DECIMAL(5,2), allowNull: true },
+  accord_4_name: { type: DataTypes.STRING(50), allowNull: true },
+  accord_4_width: { type: DataTypes.DECIMAL(5,2), allowNull: true },
+  accord_5_name: { type: DataTypes.STRING(50), allowNull: true },
+  accord_5_width: { type: DataTypes.DECIMAL(5,2), allowNull: true },
+  top_notes: { type: DataTypes.TEXT, allowNull: true },
+  middle_notes: { type: DataTypes.TEXT, allowNull: true },
+  base_notes: { type: DataTypes.TEXT, allowNull: true },
+  fragrance_notes: { type: DataTypes.TEXT, allowNull: true }
 }, {
   tableName: 'perfumes',
   timestamps: true,
@@ -69,6 +81,18 @@ const UserPerfume = sequelize.define('UserPerfume', {
   updatedAt: 'updated_at'
 });
 
+// 추천 가중치 테이블 모델
+const RecommendWeight = sequelize.define('RecommendWeight', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  type: { type: DataTypes.STRING(30), allowNull: false },
+  sub_type: { type: DataTypes.STRING(30), allowNull: true },
+  weight: { type: DataTypes.DECIMAL(4,3), allowNull: false },
+  updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
+}, {
+  tableName: 'recommend_weights',
+  timestamps: false
+});
+
 // 관계 설정
 User.hasMany(UserPerfume, { foreignKey: 'user_id' });
 UserPerfume.belongsTo(User, { foreignKey: 'user_id' });
@@ -79,4 +103,4 @@ Perfume.belongsTo(PerfumeBrand, { foreignKey: 'brand_id' });
 Perfume.hasMany(UserPerfume, { foreignKey: 'perfume_id' });
 UserPerfume.belongsTo(Perfume, { foreignKey: 'perfume_id' });
 
-module.exports = { sequelize, User, PerfumeBrand, Perfume, UserPerfume }; 
+module.exports = { sequelize, User, PerfumeBrand, Perfume, UserPerfume, RecommendWeight }; 

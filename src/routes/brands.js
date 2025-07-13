@@ -7,11 +7,42 @@ const { PerfumeBrand } = require('../models');
 // =====================================================
 router.get('/', async (req, res) => {
   try {
-    const brands = await PerfumeBrand.findAll({
+    const { include } = req.query;
+    
+    let queryOptions = {
       where: { status: 1 },
       attributes: ['id', 'name'],
       order: [['name', 'ASC']]
-    });
+    };
+    
+    // 향수 개수 포함 요청인 경우
+    if (include === 'perfume_count') {
+      const { Perfume } = require('../models');
+      const { Op } = require('sequelize');
+      
+      const brandsWithCount = await PerfumeBrand.findAll({
+        where: { status: 1 },
+        attributes: [
+          'id', 
+          'name',
+          [require('sequelize').fn('COUNT', require('sequelize').col('Perfumes.id')), 'perfume_count']
+        ],
+        include: [{
+          model: Perfume,
+          attributes: [],
+          where: { status: 1 }
+        }],
+        group: ['PerfumeBrand.id'],
+        order: [['name', 'ASC']]
+      });
+      
+      return res.json({
+        success: true,
+        data: brandsWithCount
+      });
+    }
+    
+    const brands = await PerfumeBrand.findAll(queryOptions);
     
     res.json({
       success: true,

@@ -1,6 +1,5 @@
 const express = require('express');
-const { UserPerfume } = require('../models/User');
-const Perfume = require('../models/Perfume');
+const { UserPerfume, Perfume } = require('../models');
 const router = express.Router();
 
 // 날씨 카테고리 정의
@@ -27,21 +26,8 @@ function getSeasonFromDate(date) {
 function calculateRecommendationScore(perfume, targetSeason, targetWeather) {
   let score = 0;
   
-  // 계절 매칭 점수 (높은 가중치)
-  if (perfume.season_tags && perfume.season_tags.includes(targetSeason)) {
-    score += 10;
-  }
-  
-  // 날씨 매칭 점수 (높은 가중치)
-  if (perfume.weather_tags && perfume.weather_tags.includes(targetWeather)) {
-    score += 10;
-  }
-  
-  // 계절과 날씨 모두 매칭 (보너스 점수)
-  if (perfume.season_tags && perfume.season_tags.includes(targetSeason) &&
-      perfume.weather_tags && perfume.weather_tags.includes(targetWeather)) {
-    score += 5;
-  }
+  // 기본 점수 (모든 향수에 동일하게 부여)
+  score += 5;
   
   return score;
 }
@@ -108,8 +94,8 @@ router.post('/:user_id', async (req, res) => {
       return {
         ...perfume.toJSON(),
         recommendation_score: score,
-        matched_season: perfume.season_tags && perfume.season_tags.includes(targetSeason),
-        matched_weather: perfume.weather_tags && perfume.weather_tags.includes(weather)
+        matched_season: false,
+        matched_weather: false
       };
     });
     
@@ -121,21 +107,9 @@ router.post('/:user_id', async (req, res) => {
     
     // 추천 사유 생성
     const recommendationsWithReason = recommendations.map(perfume => {
-      let reason = '';
-      
-      if (perfume.matched_season && perfume.matched_weather) {
-        reason = `${targetSeason} 계절과 ${weather} 날씨에 모두 적합한 향수입니다.`;
-      } else if (perfume.matched_season) {
-        reason = `${targetSeason} 계절에 적합한 향수입니다.`;
-      } else if (perfume.matched_weather) {
-        reason = `${weather} 날씨에 적합한 향수입니다.`;
-      } else {
-        reason = '다른 조건의 향수보다 상대적으로 적합합니다.';
-      }
-      
       return {
         ...perfume,
-        recommendation_reason: reason
+        recommendation_reason: '보유한 향수 중에서 추천됩니다.'
       };
     });
     

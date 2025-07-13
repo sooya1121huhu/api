@@ -5,12 +5,13 @@ require('dotenv').config();
 
 // 데이터베이스 및 모델 import
 const { sequelize, syncDatabase } = require('./config/database');
-const { User, Perfume, UserPerfume } = require('./models');
+const { User, Perfume, UserPerfume, PerfumeBrand } = require('./models');
 const usersRouter = require('./routes/users');
 const perfumesRouter = require('./routes/perfumes');
 const brandsRouter = require('./routes/brands');
 const recommendationsRouter = require('./routes/recommendations');
 const userPerfumesRouter = require('./routes/userPerfumes');
+const scraperRouter = require('./routes/scraper');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -24,9 +25,8 @@ const corsOptions = {
     'http://127.0.0.1:5174',
     'http://0.0.0.0:5173',
     'http://0.0.0.0:5174',
-    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com', // S3 정적 웹 호스팅
-    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com/frontend', // 프론트엔드
-    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com/admin' // 어드민
+    'https://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com', // S3 정적 웹 호스팅 (HTTPS)
+    'http://perfume-ys-frontend.s3-website.ap-northeast-2.amazonaws.com' // S3 정적 웹 호스팅 (HTTP)
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -40,13 +40,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 데이터베이스 연결 및 테이블 동기화
-syncDatabase();
+syncDatabase().catch(error => {
+  console.error('❌ 데이터베이스 연결 실패로 서버를 시작할 수 없습니다:', error);
+  process.exit(1);
+});
 
-// 모델 관계 설정
-// User.hasMany(UserPerfume, { foreignKey: 'user_id' });
-// UserPerfume.belongsTo(User, { foreignKey: 'user_id' });
-// Perfume.hasMany(UserPerfume, { foreignKey: 'perfume_id' });
-// UserPerfume.belongsTo(Perfume, { foreignKey: 'perfume_id' });
+
 
 // 라우터 설정
 app.use('/api/users', usersRouter);
@@ -54,6 +53,7 @@ app.use('/api/perfumes', perfumesRouter);
 app.use('/api/brands', brandsRouter);
 app.use('/api/recommendations', recommendationsRouter);
 app.use('/api/user-perfumes', userPerfumesRouter);
+app.use('/api/scrape', scraperRouter);
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -65,6 +65,8 @@ app.get('/', (req, res) => {
       users: '/api/users',
       perfumes: '/api/perfumes',
       brands: '/api/brands',
+      recommendations: '/api/recommendations',
+      scraper: '/api/scrape',
       health: '/api/health'
     }
   });

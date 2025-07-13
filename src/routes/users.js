@@ -1,6 +1,5 @@
 const express = require('express');
-const { User } = require('../models');
-const Perfume = require('../models/Perfume');
+const { User, Perfume, UserPerfume } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
@@ -85,11 +84,14 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // 비밀번호 해시화
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
     // 사용자 생성
     const user = await User.create({
       username,
       email,
-      password, // 실제로는 해시화해야 함
+      password: hashedPassword,
       status: 1
     });
     
